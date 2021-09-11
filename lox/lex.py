@@ -141,7 +141,8 @@ class Lexer:
         self._advance()
 
         self._add_token(
-            TokenType.STRING , self.source[self._start + 1 : self._current - 1]
+            TokenType.STRING
+            , self.source[self._start + 1 : self._current - 1].decode('utf-8')
         )
 
     def _is_digit(self, ch):

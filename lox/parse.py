@@ -91,7 +91,7 @@ class Parser:
 
     def primary(self):
         if self.match(TokenType.NUMBER, TokenType.STRING):
-            return expr.Literal(self.previous().lexeme)
+            return expr.Literal(self.previous().literal)
         if self.match(TokenType.TRUE):
             return expr.Literal(True)
         if self.match(TokenType.FALSE):
