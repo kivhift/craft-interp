@@ -162,10 +162,13 @@ class Lexer:
         while self._is_digit(self._peek()):
             self._advance()
 
-        if CodePoint.DOT == self._peek() and self._is_digit(self._peek_next()):
-            self._advance()
-            while self._is_digit(self._peek()):
+        if CodePoint.DOT == self._peek():
+            if self._is_digit(self._peek_next()):
                 self._advance()
+                while self._is_digit(self._peek()):
+                    self._advance()
+            else:
+                error(self._line, 'Invalid number with trailing dot')
 
         self._add_token(
             TokenType.NUMBER, float(self.source[self._start : self._current])
