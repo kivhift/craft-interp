@@ -1,5 +1,6 @@
 import argparse
 import mmap
+import os
 import sys
 
 from .error import LoxError
@@ -13,7 +14,6 @@ def run(interp, buffer):
     parser = Parser(list(lexer.tokens()))
     expression = parser.parse()
     interp.interpret(expression)
-    # print(ASTPrinter().print(expression))
 
 def run_REPL(interp):
     try:
@@ -45,4 +45,8 @@ i = Interpreter()
 if args.script is None:
     run_REPL(i)
 else:
+    if not os.path.exists(args.script):
+        raise SystemExit(f'File does not exist: {args.script}')
+    if 0 == os.path.getsize(args.script):
+        sys.exit(0)
     run_script(i, args.script)
