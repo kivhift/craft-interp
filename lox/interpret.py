@@ -1,16 +1,27 @@
-from .ast import expr
-from .lex import TokenType
+from .ast import expr, stmt
+from .environment import Environment
 from .error import error
+from .lex import TokenType
 
-class Interpreter(expr.Visitor):
-    def interpret(self, e):
-        print(self.stringify(self.evaluate(e)))
+class Interpreter(expr.Visitor, stmt.Visitor):
+    def __init__(self):
+        self.environment = Environment()
+
+    def interpret(self, statements):
+        for statement in statements:
+            self.execute(statement)
 
     def stringify(self, x):
         if x is None:
             return 'nil'
 
         s = str(x)
+
+        if 'True' == s:
+            return 'true'
+
+        if 'False' == s:
+            return 'false'
 
         if isinstance(x, float) and s.endswith('.0'):
             return s[:-2]
@@ -28,6 +39,19 @@ class Interpreter(expr.Visitor):
 
     def evaluate(self, e):
         return e.accept(self)
+
+    def execute(self, s):
+        s.accept(self)
+
+    def execute_block(self, statements, environment):
+        previous_env = self.environment
+        try:
+            # Switching out the environment is hacky...
+            self.environment = environment
+            for statement in statements:
+                self.execute(statement)
+        finally:
+            self.environment = previous_env
 
     def check_number_operands(self, op, *operands):
         for operand in operands:
@@ -90,9 +114,33 @@ class Interpreter(expr.Visitor):
                 self.check_number_operands(e.operator, left, right)
                 return left * right
 
+    def visit_variable_expr(self, e):
+        return self.environment.get(e.name)
+
+    def visit_assign_expr(self, e):
+        value = self.evaluate(e.value)
+        self.environment.assign(e.name, value)
+        return value
+
     def is_equal(self, a, b):
         if a is None and b is None:
             return True
         if a is None:
             return False
         return a == b
+
+    def visit_expression_stmt(self, s):
+        self.evaluate(s.expression)
+
+    def visit_print_stmt(self, s):
+        print(self.stringify(self.evaluate(s.expression)))
+
+    def visit_var_stmt(self, s):
+        value = None
+        if s.initializer is not None:
+            value = self.evaluate(s.initializer)
+
+        self.environment.define(s.name.lexeme, value)
+
+    def visit_block_stmt(self, s):
+        self.execute_block(s.statements, Environment(self.environment))

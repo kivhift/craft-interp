@@ -12,8 +12,8 @@ from .interpret import Interpreter
 def run(interp, buffer):
     lexer = Lexer(buffer)
     parser = Parser(list(lexer.tokens()))
-    expression = parser.parse()
-    interp.interpret(expression)
+    statements = parser.parse()
+    interp.interpret(statements)
 
 def run_REPL(interp):
     try:

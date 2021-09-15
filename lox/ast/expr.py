@@ -3,6 +3,12 @@ from abc import ABC, abstractmethod
 class Expr(ABC):
     @abstractmethod
     def accept(self, visitor): pass
+class Assign(Expr):
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+    def accept(self, visitor):
+        return visitor.visit_assign_expr(self)
 class Binary(Expr):
     def __init__(self, left, operator, right):
         self.left = left
@@ -26,7 +32,14 @@ class Unary(Expr):
         self.right = right
     def accept(self, visitor):
         return visitor.visit_unary_expr(self)
+class Variable(Expr):
+    def __init__(self, name):
+        self.name = name
+    def accept(self, visitor):
+        return visitor.visit_variable_expr(self)
 class Visitor(ABC):
+    @abstractmethod
+    def visit_assign_expr(self, assign): pass
     @abstractmethod
     def visit_binary_expr(self, binary): pass
     @abstractmethod
@@ -35,3 +48,5 @@ class Visitor(ABC):
     def visit_literal_expr(self, literal): pass
     @abstractmethod
     def visit_unary_expr(self, unary): pass
+    @abstractmethod
+    def visit_variable_expr(self, variable): pass

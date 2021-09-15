@@ -37,10 +37,18 @@ if not basedir.exists():
 
 ASTs = dict(
     Expr = '''
+        Assign name value
         Binary left operator right
         Grouping expression
         Literal value
         Unary operator right
+        Variable name
+    '''
+    , Stmt = '''
+        Block statements
+        Expression expression
+        Print expression
+        Var name initializer
     '''
 )
 
