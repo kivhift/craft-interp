@@ -41,14 +41,17 @@ ASTs = dict(
         Binary left operator right
         Grouping expression
         Literal value
+        Logical left operator right
         Unary operator right
         Variable name
     '''
     , Stmt = '''
         Block statements
         Expression expression
+        If condition then_branch else_branch
         Print expression
         Var name initializer
+        While condition body
     '''
 )
 

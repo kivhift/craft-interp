@@ -34,6 +34,18 @@ class Interpreter(expr.Visitor, stmt.Visitor):
     def visit_literal_expr(self, e):
         return e.value
 
+    def visit_logical_expr(self, e):
+        left = self.evaluate(e.left)
+
+        if e.operator.type == TokenType.OR:
+            if self.is_truthy(left):
+                return left
+        else:
+            if not self.is_truthy(left):
+                return left
+
+        return self.evaluate(e.right)
+
     def visit_grouping_expr(self, e):
         return self.evaluate(e.expression)
 
@@ -142,5 +154,15 @@ class Interpreter(expr.Visitor, stmt.Visitor):
 
         self.environment.define(s.name.lexeme, value)
 
+    def visit_while_stmt(self, s):
+        while self.is_truthy(self.evaluate(s.condition)):
+            self.execute(s.body)
+
     def visit_block_stmt(self, s):
         self.execute_block(s.statements, Environment(self.environment))
+
+    def visit_if_stmt(self, s):
+        if self.is_truthy(self.evaluate(s.condition)):
+            self.execute(s.then_branch)
+        elif s.else_branch is not None:
+            self.execute(s.else_branch)
