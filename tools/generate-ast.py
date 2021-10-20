@@ -55,3 +55,4 @@ ASTs = dict(
 for key in ASTs:
     with (basedir / f'{key.lower()}.py').open(mode='w', encoding='utf-8') as out:
         out.write(define_AST(key, ASTs[key]))
+        out.write('\n')
