@@ -39,14 +39,14 @@ class Variable(Expr):
         return visitor.visit_variable_expr(self)
 class Visitor(ABC):
     @abstractmethod
-    def visit_assign_expr(self, assign): pass
+    def visit_assign_expr(self, e): pass
     @abstractmethod
-    def visit_binary_expr(self, binary): pass
+    def visit_binary_expr(self, e): pass
     @abstractmethod
-    def visit_grouping_expr(self, grouping): pass
+    def visit_grouping_expr(self, e): pass
     @abstractmethod
-    def visit_literal_expr(self, literal): pass
+    def visit_literal_expr(self, e): pass
     @abstractmethod
-    def visit_unary_expr(self, unary): pass
+    def visit_unary_expr(self, e): pass
     @abstractmethod
-    def visit_variable_expr(self, variable): pass
+    def visit_variable_expr(self, e): pass

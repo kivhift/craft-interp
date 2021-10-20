@@ -26,10 +26,10 @@ class Var(Stmt):
         return visitor.visit_var_stmt(self)
 class Visitor(ABC):
     @abstractmethod
-    def visit_block_stmt(self, block): pass
+    def visit_block_stmt(self, s): pass
     @abstractmethod
-    def visit_expression_stmt(self, expression): pass
+    def visit_expression_stmt(self, s): pass
     @abstractmethod
-    def visit_print_stmt(self, print): pass
+    def visit_print_stmt(self, s): pass
     @abstractmethod
-    def visit_var_stmt(self, var): pass
+    def visit_var_stmt(self, s): pass

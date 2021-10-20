@@ -27,7 +27,7 @@ def define_AST(base, types):
     a(f'class Visitor(ABC):')
     for name in names:
         a('    @abstractmethod')
-        a(f'    def visit_{name}_{tag}(self, {name}): pass')
+        a(f'    def visit_{name}_{tag}(self, {tag[0]}): pass')
 
     return '\n'.join(o)
 
