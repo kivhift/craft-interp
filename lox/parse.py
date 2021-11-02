@@ -3,6 +3,7 @@ from .error import error
 from .lex import Token, TokenType
 
 class Parser:
+    MAX_ARGUMENTS = 255
     def __init__(self, tokens):
         self.tokens = tokens
         self.current = 0
@@ -127,7 +128,34 @@ class Parser:
             right = self.unary()
             return expr.Unary(operator, right)
 
-        return self.primary()
+        return self.call()
+
+    def call(self):
+        result = self.primary()
+
+        while True:
+            if self.match(TokenType.LEFT_PAREN):
+                result = self.finish_call(result)
+            else:
+                break
+
+        return result
+
+    def finish_call(self, callee):
+        arguments = []
+        push_arg = lambda x: arguments.append(x)
+
+        if not self.check(TokenType.RIGHT_PAREN):
+            push_arg(self.expression())
+            while self.match(TokenType.COMMA):
+                if len(arguments) >= self.MAX_ARGUMENTS:
+                    self.error(self.peek()
+                        , f"Can't have more than {self.MAX_ARGUMENTS} arguments")
+                push_arg(self.expression())
+
+        paren = self.consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments")
+
+        return expr.Call(callee, paren, arguments)
 
     def primary(self):
         if self.match(TokenType.NUMBER, TokenType.STRING):
@@ -173,6 +201,8 @@ class Parser:
 
     def declaration(self):
         try:
+            if self.match(TokenType.FUN):
+                return self.function('function')
             if self.match(TokenType.VAR):
                 return self.var_declaration()
             return self.statement()
@@ -186,6 +216,8 @@ class Parser:
             return self.if_statement()
         if self.match(TokenType.PRINT):
             return self.print_statement()
+        if self.match(TokenType.RETURN):
+            return self.return_statement()
         if self.match(TokenType.WHILE):
             return self.while_statement()
         if self.match(TokenType.LEFT_BRACE):
@@ -247,10 +279,40 @@ class Parser:
         self.consume(TokenType.SEMICOLON, "Expect ';' after value")
         return stmt.Print(value)
 
+    def return_statement(self):
+        keyword = self.previous()
+        value = None
+        if not self.check(TokenType.SEMICOLON):
+            value = self.expression()
+
+        self.consume(TokenType.SEMICOLON, "Expect ';' after return value")
+
+        return stmt.Return(keyword, value)
+
     def expression_statement(self):
         result = self.expression()
         self.consume(TokenType.SEMICOLON, "Expect ';' after expression")
         return stmt.Expression(result)
+
+    def function(self, kind):
+        name = self.consume(TokenType.IDENTIFIER, f'Expect {kind} name')
+        self.consume(TokenType.LEFT_PAREN, f"Expect '(' after {kind} name")
+        parameters = []
+        push_param = lambda x: parameters.append(x)
+
+        if not self.check(TokenType.RIGHT_PAREN):
+            push_param(self.consume(TokenType.IDENTIFIER, 'Expect parameter name'))
+            while self.match(TokenType.COMMA):
+                if len(parameters) >= self.MAX_ARGUMENTS:
+                    self.error(self.peek()
+                        , f"Can't have more than {self.MAX_ARGUMENTS} parameters")
+                push_param(self.consume(TokenType.IDENTIFIER, 'Expect parameter name'))
+
+        self.consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters")
+        self.consume(TokenType.LEFT_BRACE, f"Expect '{{' before {kind} body")
+
+        body = self.block()
+        return stmt.Function(name, parameters, body)
 
     def var_declaration(self):
         name = self.consume(TokenType.IDENTIFIER, 'Expect variable name')

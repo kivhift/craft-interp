@@ -1,11 +1,29 @@
+from time import monotonic
+
 from .ast import expr, stmt
+from .callable import Callable
 from .environment import Environment
 from .error import error
+from .function import Function
 from .lex import TokenType
+from .returnable import Return
+
+class _Clock(Callable):
+    def __str__(self):
+        return '<native fun clock>'
+
+    def arity(self):
+        return 0
+
+    def call(self, interpreter, arguments):
+        return monotonic()
 
 class Interpreter(expr.Visitor, stmt.Visitor):
     def __init__(self):
-        self.environment = Environment()
+        self.globals = g = Environment()
+        self.environment = g
+
+        g.define('clock', _Clock())
 
     def interpret(self, statements):
         for statement in statements:
@@ -126,6 +144,22 @@ class Interpreter(expr.Visitor, stmt.Visitor):
                 self.check_number_operands(e.operator, left, right)
                 return left * right
 
+    def visit_call_expr(self, e):
+        callee = self.evaluate(e.callee)
+
+        arguments = []
+        for arg in e.arguments:
+            arguments.append(self.evaluate(arg))
+
+        if not isinstance(callee, Callable):
+            self.error(e.paren, 'Can only call functions and classes')
+
+        if len(arguments) != callee.arity():
+            self.error(e.paren
+                , f'Expected {callee.arity()} arguments, got {len(arguments)}')
+
+        return callee.call(self, arguments)
+
     def visit_variable_expr(self, e):
         return self.environment.get(e.name)
 
@@ -144,8 +178,16 @@ class Interpreter(expr.Visitor, stmt.Visitor):
     def visit_expression_stmt(self, s):
         self.evaluate(s.expression)
 
+    def visit_function_stmt(self, s):
+        fun = Function(s, self.environment)
+        self.environment.define(s.name.lexeme, fun)
+
     def visit_print_stmt(self, s):
         print(self.stringify(self.evaluate(s.expression)))
+
+    def visit_return_stmt(self, s):
+        value = self.evaluate(s.value) if s.value is not None else None
+        raise Return(value)
 
     def visit_var_stmt(self, s):
         value = None
