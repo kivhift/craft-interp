@@ -8,11 +8,14 @@ from .lex import Lexer
 from .parse import Parser
 from .ast.printer import ASTPrinter
 from .interpret import Interpreter
+from .resolve import Resolver
 
 def run(interp, buffer):
     lexer = Lexer(buffer)
     parser = Parser(list(lexer.tokens()))
     statements = parser.parse()
+    resolver = Resolver(interp)
+    resolver.resolve(statements)
     interp.interpret(statements)
 
 def run_REPL(interp):

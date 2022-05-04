@@ -22,6 +22,7 @@ class Interpreter(expr.Visitor, stmt.Visitor):
     def __init__(self):
         self.globals = g = Environment()
         self.environment = g
+        self.locals = {}
 
         g.define('clock', _Clock())
 
@@ -72,6 +73,9 @@ class Interpreter(expr.Visitor, stmt.Visitor):
 
     def execute(self, s):
         s.accept(self)
+
+    def resolve(self, e, depth):
+        self.locals[e] = depth
 
     def execute_block(self, statements, environment):
         previous_env = self.environment
@@ -161,11 +165,22 @@ class Interpreter(expr.Visitor, stmt.Visitor):
         return callee.call(self, arguments)
 
     def visit_variable_expr(self, e):
-        return self.environment.get(e.name)
+        return self.lookup_variable(e.name, e)
+
+    def lookup_variable(self, name, e):
+        if (distance := self.locals.get(e)) is not None:
+            return self.environment.get_at(distance, name)
+        else:
+            return self.globals.get(name)
 
     def visit_assign_expr(self, e):
         value = self.evaluate(e.value)
-        self.environment.assign(e.name, value)
+
+        if (distance := self.locals.get(e)) is not None:
+            self.environment.assign_at(distance, e.name, value)
+        else:
+            self.globals.assign(e.name, value)
+
         return value
 
     def is_equal(self, a, b):
