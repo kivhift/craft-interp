@@ -19,7 +19,7 @@ class Environment:
         self.ancestor(distance).values[name.lexeme] = value
 
     def get_at(self, distance, name):
-        return self.ancestor(distance).values.get(name.lexeme)
+        return self.ancestor(distance).values.get(name)
 
     def get(self, name):
         if name.lexeme in self.values:
@@ -39,7 +39,7 @@ class Environment:
             self.enclosing.assign(name, value)
             return
 
-        self.error(name, "Undefined variable '{name.lexeme}'")
+        self.error(name, f"Undefined variable '{name.lexeme}'")
 
     def error(self, token, msg):
         error(token.line, msg)

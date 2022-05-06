@@ -41,7 +41,7 @@ class Resolver(expr.Visitor, stmt.Visitor):
     def visit_var_stmt(self, s):
         self.declare(s.name)
         if s.initializer is not None:
-            self.resolve_stmt(s.initializer)
+            self.resolve_expr(s.initializer)
         self.define(s.name)
 
     def declare(self, name):
@@ -50,7 +50,9 @@ class Resolver(expr.Visitor, stmt.Visitor):
 
         scope = self.scopes[-1]
         if name.lexeme in scope:
-            self.error(name, 'Already a variable with this name in this scope')
+            self.error(
+                name, f"Already a variable '{name.lexeme}' in this scope"
+            )
 
         scope[name.lexeme] = False
 

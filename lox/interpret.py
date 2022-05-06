@@ -169,7 +169,7 @@ class Interpreter(expr.Visitor, stmt.Visitor):
 
     def lookup_variable(self, name, e):
         if (distance := self.locals.get(e)) is not None:
-            return self.environment.get_at(distance, name)
+            return self.environment.get_at(distance, name.lexeme)
         else:
             return self.globals.get(name)
 
