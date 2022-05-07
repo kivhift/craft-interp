@@ -58,6 +58,8 @@ class Parser:
             if isinstance(result, expr.Variable):
                 name = result.name
                 return expr.Assign(name, value)
+            elif isinstance(result, expr.Get):
+                return expr.Set(result.object, result.name, value)
 
             self.error(equals, 'Invalid assignment target')
 
@@ -136,6 +138,11 @@ class Parser:
         while True:
             if self.match(TokenType.LEFT_PAREN):
                 result = self.finish_call(result)
+            elif self.match(TokenType.DOT):
+                name = self.consume(
+                    TokenType.IDENTIFIER, "Expect property name after '.'"
+                )
+                result = expr.Get(result, name)
             else:
                 break
 
@@ -166,6 +173,8 @@ class Parser:
             return expr.Literal(False)
         if self.match(TokenType.NIL):
             return expr.Literal(None)
+        if self.match(TokenType.THIS):
+            return expr.This(self.previous())
         if self.match(TokenType.IDENTIFIER):
             return expr.Variable(self.previous())
         if self.match(TokenType.LEFT_PAREN):
@@ -201,6 +210,8 @@ class Parser:
 
     def declaration(self):
         try:
+            if self.match(TokenType.CLASS):
+                return self.class_declaration()
             if self.match(TokenType.FUN):
                 return self.function('function')
             if self.match(TokenType.VAR):
@@ -208,6 +219,18 @@ class Parser:
             return self.statement()
         except ParseError:
             self.synchronize()
+
+    def class_declaration(self):
+        name = self.consume(TokenType.IDENTIFIER, "Expect class name")
+        self.consume(TokenType.LEFT_BRACE, "Expect '{' before class body")
+
+        methods = []
+        while not (self.check(TokenType.RIGHT_BRACE) or self.is_at_end()):
+            methods.append(self.function('method'))
+
+        self.consume(TokenType.RIGHT_BRACE, "Expect '}' after class body")
+
+        return stmt.Class(name, methods)
 
     def statement(self):
         if self.match(TokenType.FOR):

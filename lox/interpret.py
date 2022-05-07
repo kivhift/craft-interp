@@ -2,9 +2,11 @@ from time import monotonic
 
 from .ast import expr, stmt
 from .callable import Callable
+from .classes import Class
 from .environment import Environment
 from .error import error
 from .function import Function
+from .instance import Instance
 from .lex import TokenType
 from .returnable import Return
 
@@ -64,6 +66,19 @@ class Interpreter(expr.Visitor, stmt.Visitor):
                 return left
 
         return self.evaluate(e.right)
+
+    def visit_set_expr(self, e):
+        obj = self.evaluate(e.object)
+        if not isinstance(obj, Instance):
+            self.error(e.name, 'Only instances have fields')
+
+        value = self.evaluate(e.value)
+        obj.set(e.name, value)
+
+        return value
+
+    def visit_this_expr(self, e):
+        return self.lookup_variable(e.keyword, e)
 
     def visit_grouping_expr(self, e):
         return self.evaluate(e.expression)
@@ -164,6 +179,13 @@ class Interpreter(expr.Visitor, stmt.Visitor):
 
         return callee.call(self, arguments)
 
+    def visit_get_expr(self, e):
+        obj = self.evaluate(e.object)
+        if isinstance(obj, Instance):
+            return obj.get(e.name)
+
+        self.error(e.name, 'Only instances have properties')
+
     def visit_variable_expr(self, e):
         return self.lookup_variable(e.name, e)
 
@@ -194,7 +216,7 @@ class Interpreter(expr.Visitor, stmt.Visitor):
         self.evaluate(s.expression)
 
     def visit_function_stmt(self, s):
-        fun = Function(s, self.environment)
+        fun = Function(s, self.environment, False)
         self.environment.define(s.name.lexeme, fun)
 
     def visit_print_stmt(self, s):
@@ -217,6 +239,17 @@ class Interpreter(expr.Visitor, stmt.Visitor):
 
     def visit_block_stmt(self, s):
         self.execute_block(s.statements, Environment(self.environment))
+
+    def visit_class_stmt(self, s):
+        self.environment.define(s.name.lexeme, None)
+        methods = {}
+        for method in s.methods:
+            func = Function(
+                method, self.environment, 'init' == method.name.lexeme
+            )
+            methods[method.name.lexeme] = func
+        klass = Class(s.name.lexeme, methods)
+        self.environment.assign(s.name, klass)
 
     def visit_if_stmt(self, s):
         if self.is_truthy(self.evaluate(s.condition)):

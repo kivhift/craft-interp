@@ -3,16 +3,15 @@ import enum
 from .ast import expr, stmt
 from .error import error
 
-FunctionType = enum.Enum('FunctionType', '''
-    NONE
-    FUNCTION
-''')
+FunctionType = enum.Enum('FunctionType', 'NONE FUNCTION INITIALIZER METHOD')
+ClassType = enum.Enum('ClassType', 'NONE CLASS')
 
 class Resolver(expr.Visitor, stmt.Visitor):
     def __init__(self, interpreter):
         self.interpreter = interpreter
         self.scopes = []
         self.current_function = FunctionType.NONE
+        self.current_class = ClassType.NONE
 
     def error(self, token, msg):
         error(token.line, msg)
@@ -37,6 +36,26 @@ class Resolver(expr.Visitor, stmt.Visitor):
         self.begin_scope()
         self.resolve(s.statements)
         self.end_scope()
+
+    def visit_class_stmt(self, s):
+        enclosing_class = self.current_class
+        self.current_class = ClassType.CLASS
+
+        self.declare(s.name)
+        self.define(s.name)
+
+        self.begin_scope()
+        self.scopes[-1]['this'] = True
+
+        for method in s.methods:
+            decl = FunctionType.METHOD
+            if 'init' == method.name.lexeme:
+                decl = FunctionType.INITIALIZER
+            self.resolve_function(method, decl)
+
+        self.end_scope()
+
+        self.current_class = enclosing_class
 
     def visit_var_stmt(self, s):
         self.declare(s.name)
@@ -112,6 +131,8 @@ class Resolver(expr.Visitor, stmt.Visitor):
             self.error(s.keyword, "Can't return from top-level code")
 
         if s.value is not None:
+            if FunctionType.INITIALIZER == self.current_function:
+                self.error(s.keyword, "Can't return a value from init")
             self.resolve_expr(s.value)
 
     def visit_while_stmt(self, s):
@@ -128,6 +149,9 @@ class Resolver(expr.Visitor, stmt.Visitor):
         for arg in e.arguments:
             self.resolve_expr(arg)
 
+    def visit_get_expr(self, e):
+        self.resolve_expr(e.object)
+
     def visit_grouping_expr(self, e):
         self.resolve_expr(e.expression)
 
@@ -137,6 +161,16 @@ class Resolver(expr.Visitor, stmt.Visitor):
     def visit_logical_expr(self, e):
         self.resolve_expr(e.left)
         self.resolve_expr(e.right)
+
+    def visit_set_expr(self, e):
+        self.resolve_expr(e.value)
+        self.resolve_expr(e.object)
+
+    def visit_this_expr(self, e):
+        if ClassType.NONE == self.current_class:
+            self.error(e.keyword, "Can't use 'this' outside of a class")
+
+        self.resolve_local(e, e.keyword)
 
     def visit_unary_expr(self, e):
         self.resolve_expr(e.right)

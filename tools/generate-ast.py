@@ -40,14 +40,18 @@ ASTs = dict(
         Assign name value
         Binary left operator right
         Call callee paren arguments
+        Get object name
         Grouping expression
         Literal value
         Logical left operator right
+        Set object name value
+        This keyword
         Unary operator right
         Variable name
     '''
     , Stmt = '''
         Block statements
+        Class name methods
         Expression expression
         Function name parameters body
         If condition then_branch else_branch
