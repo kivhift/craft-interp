@@ -2,8 +2,9 @@ from .callable import Callable
 from .instance import Instance
 
 class Class(Callable):
-    def __init__(self, name, methods):
+    def __init__(self, name, superclass, methods):
         self.name = name
+        self.superclass = superclass
         self.methods = methods
 
     def __str__(self):
@@ -25,4 +26,8 @@ class Class(Callable):
         return instance
 
     def find_method(self, name):
-        return self.methods.get(name)
+        if name in self.methods:
+            return self.methods[name]
+
+        if self.superclass is not None:
+            return self.superclass.find_method(name)

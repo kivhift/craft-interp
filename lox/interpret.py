@@ -77,6 +77,17 @@ class Interpreter(expr.Visitor, stmt.Visitor):
 
         return value
 
+    def visit_super_expr(self, e):
+        distance = self.locals.get(e)
+        superclass = self.environment.get_at(distance, 'super')
+        obj = self.environment.get_at(distance - 1, 'this')
+        method = superclass.find_method(e.method.lexeme)
+
+        if method is None:
+            self.error(e.method, f"Undefined property '{e.method.lexeme}'")
+
+        return method.bind(obj)
+
     def visit_this_expr(self, e):
         return self.lookup_variable(e.keyword, e)
 
@@ -241,14 +252,29 @@ class Interpreter(expr.Visitor, stmt.Visitor):
         self.execute_block(s.statements, Environment(self.environment))
 
     def visit_class_stmt(self, s):
+        superclass = None
+        if s.superclass is not None:
+            superclass = self.evaluate(s.superclass)
+            if not isinstance(superclass, Class):
+                self.error(s.superclass.name, 'Superclass must be a class')
+
         self.environment.define(s.name.lexeme, None)
+
+        if s.superclass is not None:
+            self.environment = Environment(self.environment)
+            self.environment.define('super', superclass)
+
         methods = {}
         for method in s.methods:
             func = Function(
                 method, self.environment, 'init' == method.name.lexeme
             )
             methods[method.name.lexeme] = func
-        klass = Class(s.name.lexeme, methods)
+        klass = Class(s.name.lexeme, superclass, methods)
+
+        if superclass is not None:
+            self.environment = self.environment.enclosing
+
         self.environment.assign(s.name, klass)
 
     def visit_if_stmt(self, s):

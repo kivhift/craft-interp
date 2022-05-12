@@ -9,8 +9,9 @@ class Block(Stmt):
     def accept(self, visitor):
         return visitor.visit_block_stmt(self)
 class Class(Stmt):
-    def __init__(self, name, methods):
+    def __init__(self, name, superclass, methods):
         self.name = name
+        self.superclass = superclass
         self.methods = methods
     def accept(self, visitor):
         return visitor.visit_class_stmt(self)
